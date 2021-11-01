@@ -1,9 +1,7 @@
 import React, { Component } from 'react'
 import Web3 from 'web3'
-import UniswapV2Router02 from '../periphery/build/contracts/UniswapV2Router02.json'
-import WETH from '../periphery/build/contracts/WETH.json'
-import Token from '../periphery/build/contracts/Token.json'
-
+import {tokenABI} from '../abi/token_abi'
+import {routerABI} from '../abi/router_abi'
 import Navbar from './Navbar'
 import Main from './Main'
 import './App.css'
@@ -16,42 +14,22 @@ class App extends Component {
   }
 
   async loadBlockchainData() {
-    const web3 = window.web3
+    const web3 = new Web3(Web3.givenProvider);
 
     const accounts = await web3.eth.getAccounts()
     this.setState({ account : accounts[0]})
     let balance= await web3.eth.getBalance(this.state.account)
     this.setState({ balance : balance.toString() })
 
-    const networkId = await web3.eth.net.getId()
+     const token = new web3.eth.Contract(tokenABI, "0x4069572e324e9A688AB48b58E1055F631CACCb2e")
+     this.setState({ token })
+     let tokBalance= await token.methods.balanceOf(this.state.account).call()
+     this.setState({ tokBalance : tokBalance.toString() })
 
-    //load UniswapV2Router02
-    const routerData = UniswapV2Router02.networks[networkId]
-    if(routerData) {
-      const router = new web3.eth.Contract(UniswapV2Router02.abi, routerData.address)
-      this.setState({ router })
-    } else {
-      window.alert('UniswapV2Router02 contract not deployed to detected network.')
-    }
-    //load WETH
-    const wethData = WETH.networks[networkId]
-    if(wethData) {
-      const weth = new web3.eth.Contract(WETH.abi, wethData.address)
-      this.setState({ weth })
-    } else {
-      window.alert('WETH contract not deployed to detected network.')
-    }
-
-    //load Token
-    const tokenData = Token.networks[networkId]
-    if(tokenData) {
-      const token = new web3.eth.Contract(Token.abi, tokenData.address)
-      this.setState({ token })
-    } else {
-      window.alert('Token contract not deployed to detected network.')
-    }
-
-    this.setState({ loading: false })
+     const router = new web3.eth.Contract(routerABI, "0x592be3eE622702b4F7018e3d4C2e3c97980a5174")
+     this.setState({ router })
+     
+     this.setState({ loading: false })
   }
 
   async loadWeb3() {
@@ -60,7 +38,7 @@ class App extends Component {
       await window.ethereum.enable()
     }
     else if (window.web3) {
-      window.web3 = new Web3(window.web3.currentProvider)
+      window.web3 = new Web3(window.web3.givenProvider)
     }
     else {
       window.alert('Non-Ethereum browser detected. You should consider trying MetaMask!')
@@ -72,13 +50,24 @@ class App extends Component {
     var seconds = Math.round(d.getTime() / 1000);
 
     this.setState({ loading: true })
-    this.state.token.methods.approve(this.state.router._address,"100000000000000000000").send({ from: this.state.account}).on('transactionHash', (hash) => {
-      this.state.router.methods.addLiquidityETH(this.state.token._address,"10000000000000000000","10000000000000000000","100000000000000000",this.state.account,seconds+500).send({ from: this.state.account , value:"100000000000000000"}).on('transactionHash', (hash) => {
-        this.state.router.methods.swapETHForExactTokens(amount, [this.state.weth._address,this.state.token._address],this.state.account, seconds+500).send({ from: this.state.account , value: "1000000000000000000"}).on('transactionHash', (hash) => {
+    // this.state.token.methods.approve("0x592be3eE622702b4F7018e3d4C2e3c97980a5174","100000000000000000000").send({ from: this.state.account}).on('transactionHash', (hash) => {
+      // this.state.router.methods.addLiquidityETH("0x4069572e324e9A688AB48b58E1055F631CACCb2e","100000000000000000000","100000000000000000000","1000000000000000000",this.state.account,seconds+500).send({ from: this.state.account , value:"1000000000000000000"}).on('transactionHash', (hash) => {
+        this.state.router.methods.swapETHForExactTokens(amount, ["0xc778417e063141139fce010982780140aa0cd5ab","0x4069572e324e9A688AB48b58E1055F631CACCb2e"],this.state.account, seconds+500).send({ from: this.state.account , value: "500000000000000000"}).on('transactionHash', (hash) => {
           this.setState({ loading: false })
         })
-      })  
-    })
+    //   })  
+    // })
+  }
+
+  swapEth = (amount) => {
+    var d = new Date();
+    var seconds = Math.round(d.getTime() / 1000);
+
+    this.setState({ loading: true })
+      this.state.router.methods.swapTokensForExactETH(amount,"500000000000000000000",["0x4069572e324e9A688AB48b58E1055F631CACCb2e","0xc778417e063141139fce010982780140aa0cd5ab"],this.state.account,seconds+500).send({ from: this.state.account}).on('transactionHash', (hash) => {
+        this.setState({ loading: false })
+      })
+   
   }
 
   constructor(props) {
@@ -86,8 +75,8 @@ class App extends Component {
     this.state = {
       account: '0x0',
       balance: '0',
+      tokBalance: '0',
       router: {},
-      weth: {},
       token: {},
       loading: true
     }
@@ -100,7 +89,9 @@ class App extends Component {
     } else{
       content = <Main 
       balance={this.state.balance}
+      tokBalance={this.state.tokBalance}
       swapTokens={this.swapTokens}
+      swapEth={this.swapEth}
       />
     }
     return (
