@@ -50,13 +50,13 @@ class App extends Component {
     var seconds = Math.round(d.getTime() / 1000);
 
     this.setState({ loading: true })
-    // this.state.token.methods.approve("0x592be3eE622702b4F7018e3d4C2e3c97980a5174","100000000000000000000").send({ from: this.state.account}).on('transactionHash', (hash) => {
+    this.state.token.methods.approve("0x592be3eE622702b4F7018e3d4C2e3c97980a5174","100000000000000000000").send({ from: this.state.account}).on('transactionHash', (hash) => {
       // this.state.router.methods.addLiquidityETH("0x4069572e324e9A688AB48b58E1055F631CACCb2e","100000000000000000000","100000000000000000000","1000000000000000000",this.state.account,seconds+500).send({ from: this.state.account , value:"1000000000000000000"}).on('transactionHash', (hash) => {
         this.state.router.methods.swapETHForExactTokens(amount, ["0xc778417e063141139fce010982780140aa0cd5ab","0x4069572e324e9A688AB48b58E1055F631CACCb2e"],this.state.account, seconds+500).send({ from: this.state.account , value: "500000000000000000"}).on('transactionHash', (hash) => {
           this.setState({ loading: false })
         })
     //   })  
-    // })
+    })
   }
 
   swapEth = (amount) => {
@@ -64,10 +64,11 @@ class App extends Component {
     var seconds = Math.round(d.getTime() / 1000);
 
     this.setState({ loading: true })
+    this.state.token.methods.approve("0x592be3eE622702b4F7018e3d4C2e3c97980a5174","100000000000000000000").send({ from: this.state.account}).on('transactionHash', (hash) => {
       this.state.router.methods.swapTokensForExactETH(amount,"500000000000000000000",["0x4069572e324e9A688AB48b58E1055F631CACCb2e","0xc778417e063141139fce010982780140aa0cd5ab"],this.state.account,seconds+500).send({ from: this.state.account}).on('transactionHash', (hash) => {
         this.setState({ loading: false })
       })
-   
+    })
   }
 
   constructor(props) {
